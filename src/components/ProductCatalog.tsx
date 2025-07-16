@@ -3,6 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import curtainLinenWhite from "@/assets/products/curtain-linen-white.jpg";
+import curtainBlackoutNavy from "@/assets/products/curtain-blackout-navy.jpg";
+import sofaCoverGray from "@/assets/products/sofa-cover-gray.jpg";
+import cushionBeige from "@/assets/products/cushion-beige.jpg";
 
 export interface Product {
   id: string;
@@ -17,14 +21,14 @@ export interface Product {
   colors: string[];
 }
 
-// Sample product data
+// Sample product data with real images
 const sampleProducts: Product[] = [
   {
     id: "curtain-1",
     name: "Classic Linen Curtain",
     category: "curtains",
     dimensions: { width: 140, height: 250 },
-    imageUrl: "/placeholder.svg", // Will be replaced with generated images
+    imageUrl: curtainLinenWhite,
     price: 89.99,
     colors: ["White", "Beige", "Navy"]
   },
@@ -33,18 +37,27 @@ const sampleProducts: Product[] = [
     name: "Blackout Panel",
     category: "curtains",
     dimensions: { width: 120, height: 220 },
-    imageUrl: "/placeholder.svg",
+    imageUrl: curtainBlackoutNavy,
     price: 119.99,
-    colors: ["Charcoal", "Cream", "Forest Green"]
+    colors: ["Charcoal", "Navy", "Forest Green"]
   },
   {
     id: "sofa-1",
     name: "Stretch Sofa Cover",
     category: "sofa-covers", 
     dimensions: { width: 200, height: 90 },
-    imageUrl: "/placeholder.svg",
+    imageUrl: sofaCoverGray,
     price: 149.99,
     colors: ["Gray", "Brown", "Blue"]
+  },
+  {
+    id: "cushion-1",
+    name: "Decorative Throw Pillow",
+    category: "cushions",
+    dimensions: { width: 45, height: 45 },
+    imageUrl: cushionBeige,
+    price: 29.99,
+    colors: ["Beige", "White", "Gray"]
   }
 ];
 
@@ -92,10 +105,12 @@ export const ProductCatalog = ({ onProductSelect, selectedProduct }: ProductCata
                   onClick={() => onProductSelect(product)}
                 >
                   <div className="space-y-3">
-                    <div className="aspect-square bg-canvas-bg rounded-lg flex items-center justify-center">
-                      <div className="text-muted-foreground text-sm">
-                        Product Image
-                      </div>
+                    <div className="aspect-square bg-canvas-bg rounded-lg overflow-hidden border border-photo-border">
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     
                     <div className="space-y-2">

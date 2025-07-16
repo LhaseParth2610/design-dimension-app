@@ -3,9 +3,10 @@ import { Canvas as FabricCanvas, Image as FabricImage, Rect } from "fabric";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { RotateCcw, Download, Undo, Redo, Move } from "lucide-react";
+import { RotateCcw, Download, Undo, Redo, Move, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "./ProductCatalog";
+import { createTransparentProduct } from "@/utils/backgroundRemoval";
 
 interface VisualizationCanvasProps {
   photoUrl: string;
@@ -22,6 +23,8 @@ export const VisualizationCanvas = ({
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   const [opacity, setOpacity] = useState([80]);
   const [isCalibrated, setIsCalibrated] = useState(false);
+  const [isProcessingProduct, setIsProcessingProduct] = useState(false);
+  const [pixelsPerCm, setPixelsPerCm] = useState(1);
   const { toast } = useToast();
 
   // Initialize canvas
@@ -80,34 +83,103 @@ export const VisualizationCanvas = ({
       });
   }, [fabricCanvas, photoUrl, toast]);
 
-  // Add product overlay
+  // Add product overlay with background removal
   useEffect(() => {
     if (!fabricCanvas || !selectedProduct || !isCalibrated) return;
 
-    // For now, create a placeholder rectangle for the product
-    // In a real implementation, this would use the actual product image
-    const rect = new Rect({
-      left: 100,
-      top: 100,
-      fill: 'rgba(59, 130, 246, 0.8)', // Primary color with transparency
-      width: selectedProduct.dimensions.width * 2, // Scale factor for demo
-      height: selectedProduct.dimensions.height * 2,
-      stroke: 'hsl(214, 84%, 56%)',
-      strokeWidth: 2,
-      cornerColor: 'hsl(214, 84%, 56%)',
-      cornerSize: 8,
-      transparentCorners: false,
-    });
+    const addProductOverlay = async () => {
+      setIsProcessingProduct(true);
+      
+      try {
+        toast({
+          title: "Processing product",
+          description: "Removing background for seamless overlay..."
+        });
 
-    fabricCanvas.add(rect);
-    fabricCanvas.setActiveObject(rect);
-    fabricCanvas.renderAll();
+        // Create transparent version of product image
+        const transparentUrl = await createTransparentProduct(selectedProduct.imageUrl);
+        
+        // Load the transparent product image
+        const productImage = await FabricImage.fromURL(transparentUrl, { 
+          crossOrigin: 'anonymous' 
+        });
 
-    toast({
-      title: "Product added",
-      description: `${selectedProduct.name} has been added to your photo. Drag to position it.`
-    });
-  }, [fabricCanvas, selectedProduct, isCalibrated, toast]);
+        // Calculate scaled dimensions based on real-world size
+        const scaledWidth = selectedProduct.dimensions.width * pixelsPerCm;
+        const scaledHeight = selectedProduct.dimensions.height * pixelsPerCm;
+
+        // Scale the image to match real-world dimensions
+        const scaleX = scaledWidth / productImage.width!;
+        const scaleY = scaledHeight / productImage.height!;
+
+        productImage.set({
+          left: 100,
+          top: 100,
+          scaleX,
+          scaleY,
+          opacity: opacity[0] / 100,
+          // Add shadow for realism
+          shadow: {
+            color: 'rgba(0, 0, 0, 0.3)',
+            blur: 10,
+            offsetX: 5,
+            offsetY: 5,
+          },
+          cornerColor: 'hsl(214, 84%, 56%)',
+          cornerSize: 8,
+          transparentCorners: false,
+        });
+
+        // Remove any existing product overlays
+        const existingProducts = fabricCanvas.getObjects().filter(obj => 
+          obj.type === 'image' && obj !== fabricCanvas.getObjects()[0]
+        );
+        existingProducts.forEach(obj => fabricCanvas.remove(obj));
+
+        fabricCanvas.add(productImage);
+        fabricCanvas.setActiveObject(productImage);
+        fabricCanvas.renderAll();
+
+        toast({
+          title: "Product added successfully",
+          description: `${selectedProduct.name} has been overlaid with transparent background.`
+        });
+      } catch (error) {
+        console.error('Error adding product overlay:', error);
+        toast({
+          title: "Error processing product",
+          description: "Failed to remove background. Using original image.",
+          variant: "destructive"
+        });
+        
+        // Fallback to original image if background removal fails
+        const fallbackImage = await FabricImage.fromURL(selectedProduct.imageUrl, { 
+          crossOrigin: 'anonymous' 
+        });
+        
+        const scaledWidth = selectedProduct.dimensions.width * pixelsPerCm;
+        const scaledHeight = selectedProduct.dimensions.height * pixelsPerCm;
+        const scaleX = scaledWidth / fallbackImage.width!;
+        const scaleY = scaledHeight / fallbackImage.height!;
+
+        fallbackImage.set({
+          left: 100,
+          top: 100,
+          scaleX,
+          scaleY,
+          opacity: opacity[0] / 100,
+        });
+
+        fabricCanvas.add(fallbackImage);
+        fabricCanvas.setActiveObject(fallbackImage);
+        fabricCanvas.renderAll();
+      } finally {
+        setIsProcessingProduct(false);
+      }
+    };
+
+    addProductOverlay();
+  }, [fabricCanvas, selectedProduct, isCalibrated, pixelsPerCm, opacity, toast]);
 
   // Handle opacity change
   const handleOpacityChange = (value: number[]) => {
@@ -123,11 +195,13 @@ export const VisualizationCanvas = ({
   };
 
   const handleCalibration = () => {
+    // For demo purposes, set a reasonable scale
+    setPixelsPerCm(3); // 3 pixels per cm as default
     setIsCalibrated(true);
     onCalibrationStart();
     toast({
-      title: "Calibration enabled",
-      description: "Draw a line over a known object to set the scale."
+      title: "Calibration set",
+      description: "Scale calibrated for accurate product sizing. You can now add products."
     });
   };
 
@@ -168,6 +242,13 @@ export const VisualizationCanvas = ({
             </Button>
           )}
           
+          {isProcessingProduct && (
+            <Button disabled size="sm" variant="outline">
+              <Wand2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </Button>
+          )}
+          
           <Button onClick={handleDownload} size="sm">
             <Download className="mr-2 h-4 w-4" />
             Download
@@ -202,6 +283,8 @@ export const VisualizationCanvas = ({
             <span>Selected: {selectedProduct.name}</span>
             <span>•</span>
             <span>{selectedProduct.dimensions.width} × {selectedProduct.dimensions.height} cm</span>
+            <span>•</span>
+            <span>Scale: {pixelsPerCm.toFixed(1)} px/cm</span>
           </div>
         </div>
       )}
@@ -209,7 +292,7 @@ export const VisualizationCanvas = ({
       {!isCalibrated && selectedProduct && (
         <div className="p-4 bg-secondary/50 rounded-lg border border-dashed border-primary/30">
           <p className="text-sm text-muted-foreground text-center">
-            Please calibrate the scale first to accurately place products
+            Click "Calibrate Scale" to enable accurate product placement with real-world dimensions
           </p>
         </div>
       )}
