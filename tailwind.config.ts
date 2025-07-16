@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				canvas: {
+					bg: 'hsl(var(--canvas-bg))'
+				},
+				overlay: {
+					controls: 'hsl(var(--overlay-controls))'
+				},
+				'photo-border': 'hsl(var(--photo-border))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -62,6 +69,14 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-subtle': 'var(--gradient-subtle)'
+			},
+			boxShadow: {
+				'soft': 'var(--shadow-soft)',
+				'overlay': 'var(--shadow-overlay)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
