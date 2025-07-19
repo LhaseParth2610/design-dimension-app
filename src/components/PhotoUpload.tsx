@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, Camera, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,8 +12,11 @@ export const PhotoUpload = ({ onPhotoSelect }: PhotoUploadProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  // [1] Add onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const handleFileSelect = (file: File) => {
+  // [2] Downscale large images on upload
+  const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
@@ -22,7 +25,29 @@ export const PhotoUpload = ({ onPhotoSelect }: PhotoUploadProps) => {
       });
       return;
     }
-
+    // Downscale if needed
+    const img = new window.Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise((resolve) => { img.onload = resolve; });
+    const maxDim = 1600;
+    let { width, height } = img;
+    if (width > maxDim || height > maxDim) {
+      const scale = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, file.type));
+      if (blob) {
+        const downscaledFile = new File([blob], file.name, { type: file.type });
+        const imageUrl = URL.createObjectURL(downscaledFile);
+        onPhotoSelect(downscaledFile, imageUrl);
+        return;
+      }
+    }
     const imageUrl = URL.createObjectURL(file);
     onPhotoSelect(file, imageUrl);
   };
@@ -58,6 +83,14 @@ export const PhotoUpload = ({ onPhotoSelect }: PhotoUploadProps) => {
     }
   };
 
+  // [4] Show onboarding if first time user
+  useEffect(() => {
+    if (!localStorage.getItem('hasSeenPhotoUploadOnboarding')) {
+      setShowOnboarding(true);
+      localStorage.setItem('hasSeenPhotoUploadOnboarding', 'true');
+    }
+  }, []);
+
   return (
     <Card 
       className={`relative p-8 border-2 border-dashed transition-all duration-200 ${
@@ -89,6 +122,8 @@ export const PhotoUpload = ({ onPhotoSelect }: PhotoUploadProps) => {
             onClick={openFileDialog}
             className="flex-1 h-12"
             variant="default"
+            aria-label="Upload photo"
+            title="Upload photo"
           >
             <Upload className="mr-2 h-4 w-4" />
             Upload Photo
@@ -98,6 +133,8 @@ export const PhotoUpload = ({ onPhotoSelect }: PhotoUploadProps) => {
             onClick={capturePhoto}
             variant="outline"
             className="flex-1 h-12"
+            aria-label="Take photo"
+            title="Take photo"
           >
             <Camera className="mr-2 h-4 w-4" />
             Take Photo

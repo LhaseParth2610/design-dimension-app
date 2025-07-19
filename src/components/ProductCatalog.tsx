@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import curtainLinenWhite from "@/assets/products/curtain-linen-white.jpg";
-import curtainBlackoutNavy from "@/assets/products/curtain-blackout-navy.jpg";
+import curtainLinenWhite from "@/assets/products/curtain-linen-white.png";
+import curtainBlackoutNavy from "@/assets/products/curtain-linen-blue.png";
 import sofaCoverGray from "@/assets/products/sofa-cover-gray.jpg";
-import cushionBeige from "@/assets/products/cushion-beige.jpg";
+import cushionBeige from "@/assets/products/cushion-beige.png";
 
 export interface Product {
   id: string;
@@ -27,7 +27,7 @@ const sampleProducts: Product[] = [
     id: "curtain-1",
     name: "Classic Linen Curtain",
     category: "curtains",
-    dimensions: { width: 140, height: 250 },
+    dimensions: { width: 340, height: 250 },
     imageUrl: curtainLinenWhite,
     price: 89.99,
     colors: ["White", "Beige", "Navy"]
@@ -54,7 +54,7 @@ const sampleProducts: Product[] = [
     id: "cushion-1",
     name: "Decorative Throw Pillow",
     category: "cushions",
-    dimensions: { width: 45, height: 45 },
+    dimensions: { width: 75, height: 75 },
     imageUrl: cushionBeige,
     price: 29.99,
     colors: ["Beige", "White", "Gray"]
